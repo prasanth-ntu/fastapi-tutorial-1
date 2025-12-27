@@ -1,8 +1,8 @@
-# Fastapi Tutorial
+# [Python FastAPI Tutorial: How to Connect FastAPI to Database](https://www.youtube.com/watch?v=34jQRPssM5Q&list=PLK8U0kF0E_D6l19LhOGWhVZ3sQ6ujJKq_&index=3)
 
-## YouTube: [Python FastAPI Tutorial: How to build modern RESTful APIs with Python](https://www.youtube.com/watch?v=MCVcAAoDJS8&list=PLK8U0kF0E_D6l19LhOGWhVZ3sQ6ujJKq_&index=2)
+> [!SUMMARY] FastAPI application with all the CRUD operation that's connected to the DB
 
-### Step 1: Install poetry
+## Step 1: Install poetry
 ```bash
 $ poetry install
 ```
@@ -21,21 +21,12 @@ INFO:     Application startup complete.
 ### Step 3: Visit the URL in browser
 
 Our uvicorn is running in http://127.0.0.1:8000. 
-Visit this URL in the browser to see the result from the server (for the GET request)
-```json
-{
-  "Welcome to the API to manage books": "Santh"
-}
-```
 
 Visit http://127.0.0.1:8000/docs to see the auto-generated Swagger UI documentation embedded within the application.
-![FastAPI doc auto-generated](static/fast-api-doc-1.png)
-
 
 **Dummy content for testing**
 ```json
 {
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "title": "Eric's Fast API Course",
   "author": "Eric Roby",
   "description": "The quickest way to learn FastAPI",
@@ -43,10 +34,54 @@ Visit http://127.0.0.1:8000/docs to see the auto-generated Swagger UI documentat
 }
 
 {
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "title": "Example Title",
   "author": "Example Author",
   "description": "Example Description",
   "rating": 90
 }
+```
+
+# Few notes
+
+## SQLAlchemy tracks objects differently for `CREATE` vs `UPDATE`
+
+```
+# CREATE - object starts "untracked"
+book_model = models.Books(...)      # ❌ Not in session
+db.add(book_model)                  # ✅ Now tracked
+db.commit()                         # INSERT
+
+# UPDATE - object starts "tracked"
+book_model = db.query(...).first()  # ✅ Already tracked
+book_model.title = "New"            # ✅ Change detected
+# No db.add() needed!
+db.commit()                         # UPDATE
+```
+
+## How Pydantic handles extra fields?
+
+By default, Pydantic models ignore fields that aren't defined. So if someone sends:
+```json
+{
+  "id": 999,
+  "title": "New Book",
+  "author": "Author Name",
+  "description": "Book description",
+  "rating": 85
+}
+```
+The `id: 999` will be ignored because it's not in your `Book` model (in `books.py`). Pydantic will only parse:
+- `title`
+- `author`
+- `description`
+- `rating`
+
+**This is a security feature**
+This prevents users from trying to change the ID via the request body. The ID comes from the path parameter (`book_id`), not the body, which is the correct REST pattern.
+
+## Formatting and Linting
+Inside the venv, run
+```bash
+$ ruff format .
+$ ruff check .
 ```
