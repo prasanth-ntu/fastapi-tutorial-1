@@ -1,83 +1,122 @@
-# [Python FastAPI Tutorial: How to Connect FastAPI to Database](https://www.youtube.com/watch?v=34jQRPssM5Q&list=PLK8U0kF0E_D6l19LhOGWhVZ3sQ6ujJKq_&index=3)
+# [How to build a FastAPI app with PostgreSQL](https://www.youtube.com/watch?v=398DuQbQJq0&list=PLK8U0kF0E_D6l19LhOGWhVZ3sQ6ujJKq_&index=5)
 
-> [!SUMMARY] FastAPI application with all the CRUD operation that's connected to the DB
+> [!SUMMARY] FastAPI application (a quiz game) with all the CRUD operation that's connected to the DB
 
-## Step 1: Install poetry
 ```bash
-$ poetry install
+# Project structure
+|- main.py            # Main FastAPI file
+|- database.py
+|- models.py
+|- pyproject.toml
+|- README.md
 ```
 
-## Step 2: Run our FastAPI app with auto-reload enabled for development.
+## Prerequisites
+- **Python**: `>= 3.14` (see `pyproject.toml`)
+- **Poetry**: for dependency management
+- **PostgreSQL**: local instance (or remote)
+- **pgAdmin** (optional): GUI for inspecting/setting up your DB
+
+## Step 1: Install dependencies
 ```bash
-uvicorn books:app --reload
-INFO:     Will watch for changes in these directories: ['/Users/user/Projects/misc/fastapi-tutorial-1']
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [14165] using StatReload
-INFO:     Started server process [14197]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
+poetry install
 ```
 
-### Step 3: Visit the URL in browser
+## Step 2: Install PostgreSQL
+Find the latest version in [postgresql.org](https://www.postgresql.org/) and install (with [Homebrew](https://formulae.brew.sh/formula/postgresql@18) for Mac).
+```bash
+# In Mac
+$ brew update
+$ brew install postgresql@18
+```
 
-Our uvicorn is running in http://127.0.0.1:8000. 
+Add PostgreSQL to your PATH (required because it's keg-only)
+```bash
+# Find the details
+$ brew info postgresql@18 
+==> postgresql@18: stable 18.1 (bottled) [keg-only]
+...
+If you need to have postgresql@18 first in your PATH, run:
+  echo 'export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"' >> /Users/user/.zshrc
+...
 
-Visit http://127.0.0.1:8000/docs to see the auto-generated Swagger UI documentation embedded within the application.
+# Add it to our path
+$ echo 'export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"' >> ~/.zshrc
 
-**Dummy content for testing**
+$ source ~/.zshrc  # or restart your terminal
+
+# Verify psql is running
+$ psql --version
+psql (PostgreSQL) 18.1 (Homebrew)
+```
+
+## Step 3: Start the PostgreSQL service
+```bash
+$  brew services start postgresql@18
+
+# Verify
+$ brew services list | grep postgres 
+postgresql@18 started         user ~/Library/LaunchAgents/homebrew.mxcl.postgresql@18.plist
+```
+
+## Step 4: (Optional) Install pgAdmin
+Official download: [pgadmin.org](https://www.pgadmin.org/download/pgadmin-4-macos/)
+
+## Step 5: Create the database + user
+This project currently uses a hard-coded connection string in `database.py`:
+
+```text
+postgresql://user:postgres@localhost:5432/QuizApplicationYT
+```
+
+That means:
+- **username**: `user`
+- **password**: `postgres`
+- **database**: `QuizApplicationYT`
+
+Create them in Postgres (one-time):
+
+```bash
+psql -U postgres
+```
+
+```sql
+CREATE USER "user" WITH PASSWORD 'postgres';
+CREATE DATABASE "QuizApplicationYT" OWNER "user";
+GRANT ALL PRIVILEGES ON DATABASE "QuizApplicationYT" TO "user";
+```
+
+If you prefer different credentials/db name, update `URL_DATABASE` in `database.py`.
+
+## Step 6: Setup Quiz Server & DB (pgAdmin screenshots)
+![Setup `Quiz` Server](static/quiz-server-setup.png)
+![Setup `QuizApplicationYT` DB](static/quiz-tables-added.png)
+
+## Step 7: Run the FastAPI server
+```bash
+$ uvicorn main:app --reload 
+```
+
+Visit the Swagger docs: `http://127.0.0.1:8000/docs`
+
+## Sample request body
 ```json
 {
-  "title": "Eric's Fast API Course",
-  "author": "Eric Roby",
-  "description": "The quickest way to learn FastAPI",
-  "rating": 100
-}
-
-{
-  "title": "Example Title",
-  "author": "Example Author",
-  "description": "Example Description",
-  "rating": 90
+  "question_text": "What's the best Python Framework for HTTP based API server?",
+  "choices": [
+    {
+      "choice_text": "FastAPI",
+      "is_correct": true
+    },
+   {
+      "choice_text": "Anything else",
+      "is_correct": false
+    }
+  ]
 }
 ```
 
 # Few notes
-
-## SQLAlchemy tracks objects differently for `CREATE` vs `UPDATE`
-
-```
-# CREATE - object starts "untracked"
-book_model = models.Books(...)      # ❌ Not in session
-db.add(book_model)                  # ✅ Now tracked
-db.commit()                         # INSERT
-
-# UPDATE - object starts "tracked"
-book_model = db.query(...).first()  # ✅ Already tracked
-book_model.title = "New"            # ✅ Change detected
-# No db.add() needed!
-db.commit()                         # UPDATE
-```
-
-## How Pydantic handles extra fields?
-
-By default, Pydantic models ignore fields that aren't defined. So if someone sends:
-```json
-{
-  "id": 999,
-  "title": "New Book",
-  "author": "Author Name",
-  "description": "Book description",
-  "rating": 85
-}
-```
-The `id: 999` will be ignored because it's not in your `Book` model (in `books.py`). Pydantic will only parse:
-- `title`
-- `author`
-- `description`
-- `rating`
-
-**This is a security feature**
-This prevents users from trying to change the ID via the request body. The ID comes from the path parameter (`book_id`), not the body, which is the correct REST pattern.
 
 ## Formatting and Linting
 Inside the venv, run

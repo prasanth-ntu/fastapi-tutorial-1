@@ -2,14 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-# Settings and parameters for setting up the database instance
-# ########################################################################################
-SQLALCHEMY_DATABASE_URL = "sqlite:///./books.db"  # This books.db is going to be created automatically by SQLAlchemy into our application
+# Path to our local instance/installation of PostgreSQL
+URL_DATABASE = "postgresql://user:postgres@localhost:5432/QuizApplicationYT"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},  # SQLite specific connection argument
-)
+engine = create_engine(URL_DATABASE)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

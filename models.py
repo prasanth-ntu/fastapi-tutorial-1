@@ -1,13 +1,20 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from database import Base
 
 
-# Table within the database we are creating
-class Books(Base):
-    __tablename__ = "books"  # SQLAlchemy specific table name
+# Question table
+class Questions(Base):
+    __tablename__ = "questions"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
-    author = Column(String)
-    description = Column(String)
-    rating = Column(Integer)
+    question_text = Column(String, index=True)
+
+
+# Choices table
+class Choices(Base):
+    __tablename__ = "choices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    choice_text = Column(String, index=True)
+    is_correct = Column(Boolean, default=False)
+    question_id = Column(Integer, ForeignKey("questions.id"))
